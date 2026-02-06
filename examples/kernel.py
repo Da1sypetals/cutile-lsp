@@ -184,7 +184,6 @@ from math import ceil
 from types import SimpleNamespace
 
 import cuda.tile as ct
-import torch
 
 
 @ct.function
