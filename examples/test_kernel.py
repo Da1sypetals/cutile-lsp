@@ -8,7 +8,7 @@ from cuda.tile._ir.type import ArrayTy, SizeTy, TupleTy
 from cuda.tile._passes.ast2hir import get_function_hir
 from cuda.tile._passes.hir2ir import hir2ir
 
-from kernel import sinkhorn_knopp_bwd_implicit_cg
+from examples.kernel import sinkhorn_knopp_bwd_implicit_cg
 
 
 def _check_cutile_semantics(
