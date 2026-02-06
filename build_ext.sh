@@ -4,6 +4,8 @@ pip install -e .
 
 cd vscode_extension
 
+npm install
+
 # Compile TypeScript client
 npm run compile
 
