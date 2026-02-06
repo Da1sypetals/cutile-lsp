@@ -1,45 +1,47 @@
-# cuTile LSP 启用与使用指南
+# cuTile LSP Setup and Usage Guide
 
-## 环境准备
+> [中文版本](docs/README_zh.md)
 
-- **Python 环境**：确保使用你要在 VS Code 中选择的 Python 解释器，并在该环境中安装 `cutile-lsp`。
-- **依赖安装**：在项目根目录执行：
+## Environment Setup
+
+- **Python Environment**: Make sure to use the Python interpreter you want to select in VS Code, and install `cutile-lsp` in that environment.
+- **Dependency Installation**: Run the following in the project root directory:
 
 ```sh
 pip install -e ".[dev]"
 ```
 
-- 安装npm依赖
+- Install npm dependencies:
 
 ```sh
 npm install
 npm install -g @vscode/vsce
 ```
 
-## 安装 VS Code 扩展
+## Install VS Code Extension
 
 ```sh
 bash build_ext.sh
 ```
 
-## 选择正确的 Python 解释器
+## Select the Correct Python Interpreter
 
-扩展会使用 Python 扩展当前选中的解释器来启动语言服务：
+The extension will use the currently selected interpreter from the Python extension to start the language server:
 
-- 在 VS Code 中打开命令面板，选择 **Python: Select Interpreter**。
-- 选择已安装 `cutile-lsp` 的解释器。
+- Open the command palette in VS Code and select **Python: Select Interpreter**.
+- Choose the interpreter that has `cutile-lsp` installed.
 
-如果解释器中未安装 `cutile-lsp`，扩展会提示警告并不会启动 LSP。
+If `cutile-lsp` is not installed in the selected interpreter, the extension will show a warning and will not start the LSP.
 
-## 启用 cuTile LSP 的文件标记
+## Enable cuTile LSP File Markers
 
-LSP 只会处理**显式启用**的文件。请在文件顶部加入启用标记：
+The LSP will only process **explicitly enabled** files. Please add the enable marker at the top of the file:
 
 ```py
 # cutile-lsp: on
 ```
 
-并且用以下标记圈定需要分析的代码段:
+And use the following markers to delimit the code section that needs analysis:
 
 ```py
 # cutile-lsp: start
@@ -47,11 +49,11 @@ LSP 只会处理**显式启用**的文件。请在文件顶部加入启用标记
 # cutile-lsp: end
 ```
 
-## 获得 LSP 功能的关键写法
+## Key Patterns for LSP Features
 
-### 1. 需要类型提示的 kernel
+### 1. Kernels Requiring Type Hints
 
-在 kernel 的 docstring 中加入 `<typecheck>` 块, **每行一个**，LSP 会根据这些参数进行类型检查并产生诊断信息：
+Add a `<typecheck>` block in the kernel's docstring, **one per line**, and the LSP will perform type checking based on these parameters and generate diagnostics:
 
 ```py
 @ct.kernel
@@ -66,12 +68,18 @@ def your_kernel(X, Y, TILE_N: ConstInt):
     ...
 ```
 
-### 2. Inlay Hints（类型提示）
+### 2. Inlay Hints (Type Annotations)
 
-当文件被启用且语法正确时，LSP 会在编辑器中自动显示类型提示。它们会在保存或修改文件后刷新。
+When the file is enabled and syntactically correct, the LSP will automatically display type hints in the editor. They will refresh after saving or modifying the file.
 
-## 常见问题
+## Debug
 
-- **LSP 没启动**：确认当前 Python 解释器已安装 `cutile-lsp` 并已在 VS Code 中选中。
-- **没有任何提示或诊断**：确认文件顶部有 `# cutile-lsp: on`，并且代码包含 `# cutile-lsp: start` 和 `# cutile-lsp: end` 标记。
-- **提示位置不正确**：确保 `# cutile-lsp: start` 位于分析代码块之前，并且不要嵌套多个 `start/end` 对。
+```sh
+python -m cutile_lsp.lsp_pipeline.pipeline examples/kernel.py
+```
+
+## FAQ
+
+- **LSP not starting**: Confirm that the current Python interpreter has `cutile-lsp` installed and is selected in VS Code.
+- **No hints or diagnostics**: Confirm that the file has `# cutile-lsp: on` at the top, and the code contains `# cutile-lsp: start` and `# cutile-lsp: end` markers.
+- **Incorrect hint positions**: Ensure `# cutile-lsp: start` is placed before the code block to be analyzed, and do not nest multiple `start/end` pairs.
