@@ -13,7 +13,8 @@ from cuda.tile._ir.ir import KernelArgument
 from cuda.tile._ir.type import ArrayTy, SizeTy, TupleTy
 from cuda.tile._passes.ast2hir import get_function_hir
 from cuda.tile._passes.hir2ir import hir2ir
-from cuda.tile.shape_check import get_kernel_shapes_info
+
+from cutile_lsp.lsp_pipeline.type_check import bind_args, get_kernel_shapes_info
 
 DTYPE_MAP = {
     "bool": ct.bool_,
@@ -73,7 +74,7 @@ class Tensor:
         return KernelArgument(type=array_ty, is_const=False)
 
 
-def _bind_args(kernel_func, args: tuple) -> tuple[KernelArgument, ...]:
+def _bind_arguments(kernel_func, args: tuple) -> tuple[KernelArgument, ...]:
     """
     Convert user-supplied args into a tuple of KernelArgument.
 
@@ -82,10 +83,9 @@ def _bind_args(kernel_func, args: tuple) -> tuple[KernelArgument, ...]:
       - Otherwise, delegate to shape_check.bind_args which handles KernelArgument
         pass-through and standard cuTile type conversion with error reporting.
     """
-    from cuda.tile.shape_check import bind_args as _bind_args
 
     normalized = tuple(arg.to_kernel_argument() if isinstance(arg, Tensor) else arg for arg in args)
-    return _bind_args(kernel_func, normalized)
+    return bind_args(kernel_func, normalized)
 
 
 def _check_cutile_semantics(
@@ -102,7 +102,7 @@ def _check_cutile_semantics(
 
 
 def check_semantics_and_type(kernel, args) -> None:
-    ir_args = _bind_args(kernel, args)
+    ir_args = _bind_arguments(kernel, args)
 
     config = TileContextConfig(
         temp_dir=tempfile.gettempdir(), log_keys=[], compiler_timeout_sec=None, enable_crash_dump=False

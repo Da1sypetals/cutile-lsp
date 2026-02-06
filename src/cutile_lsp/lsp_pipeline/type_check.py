@@ -8,7 +8,6 @@ from typing import Callable, Sequence
 
 from cuda.tile._const_utils import get_constant_annotations
 from cuda.tile._context import init_context_config_from_env
-from cuda.tile._exception import Loc, TileError
 from cuda.tile._execution import kernel
 from cuda.tile._ir import hir, ir
 from cuda.tile._ir.ir import KernelArgument
@@ -84,11 +83,15 @@ def _get_ops_for_shapes_info(kernel_func: kernel, args: tuple[KernelArgument, ..
     return filtered_ops
 
 
-def _get_kernel_shapecheck_ir(kernel_func: kernel, args: tuple) -> ir.Block:
+def bind_args(kernel_func: kernel, args: tuple) -> tuple[KernelArgument, ...]:
     """
-    Compile a kernel to IR with type inference (via hir2ir), returning the typed Block.
+    Convert user-supplied args into a tuple of KernelArgument.
 
-    Only runs up to hir2ir -- no further optimization passes are needed for shape checking.
+    For each arg:
+      - If it is already a KernelArgument, use it directly.
+      - Otherwise, fall back to the standard cuTile compiler type conversion
+        (typeof_pyval + get_constant_value). If that also fails, raise a TypeError
+        indicating which argument (0-based index) caused the problem.
     """
     from cuda.tile._compile import get_constant_value
     from cuda.tile._ir.typing_support import typeof_pyval
@@ -97,19 +100,35 @@ def _get_kernel_shapecheck_ir(kernel_func: kernel, args: tuple) -> ir.Block:
     param_names = tuple(inspect.signature(pyfunc).parameters.keys())
     constant_annotations = get_constant_annotations(pyfunc)
 
-    # Convert mixed args (KernelArgument and plain Python values) to all KernelArgument
-    ir_args = []
-    for param_name, arg_value in zip(param_names, args, strict=True):
+    assert len(args) == len(param_names), f"Expected {len(param_names)} arguments, got {len(args)}"
+
+    ir_args: list[KernelArgument] = []
+    for idx, (param_name, arg_value) in enumerate(zip(param_names, args, strict=True)):
         if isinstance(arg_value, KernelArgument):
             ir_args.append(arg_value)
         else:
             is_const = param_name in constant_annotations
-            ty = typeof_pyval(arg_value, kernel_arg=not is_const)
+            try:
+                ty = typeof_pyval(arg_value, kernel_arg=not is_const)
+            except (TypeError, Exception) as e:
+                raise TypeError(
+                    f"Argument {idx} ('{param_name}') = {arg_value!r} "
+                    f"of type {type(arg_value).__name__} is not a supported kernel argument: {e}"
+                ) from e
             const_val = get_constant_value(arg_value) if is_const else None
             ir_args.append(KernelArgument(type=ty, is_const=is_const, const_value=const_val))
-    ir_args = tuple(ir_args)
+    return tuple(ir_args)
 
-    func_hir: hir.Function = get_function_hir(pyfunc, entry_point=True)
+
+def _get_kernel_shapecheck_ir(kernel_func: kernel, args: tuple) -> ir.Block:
+    """
+    Compile a kernel to IR with type inference (via hir2ir), returning the typed Block.
+
+    Only runs up to hir2ir -- no further optimization passes are needed for shape checking.
+    """
+    ir_args = bind_args(kernel_func, args)
+
+    func_hir: hir.Function = get_function_hir(kernel_func._pyfunc, entry_point=True)
 
     config = init_context_config_from_env()
     ir_ctx = ir.IRContext(config)

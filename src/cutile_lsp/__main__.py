@@ -2,6 +2,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 
 from lsprotocol import types
@@ -248,7 +249,8 @@ def _process_document(ls: LanguageServer, uri: str):
         return
 
     except Exception as e:
-        logger.exception("Error processing document: %s", file_path)
+        # log the error stack trace
+        logger.error(f"Error processing document: {file_path}\n{traceback.format_exc()}")
         # Send error as diagnostic
         ls.text_document_publish_diagnostics(
             types.PublishDiagnosticsParams(
