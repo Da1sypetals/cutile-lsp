@@ -53,6 +53,8 @@ LSP 只会处理**显式启用**的文件。请在文件顶部加入启用标记
 
 在 kernel 的 docstring 中加入 `<typecheck>` 块, **每行一个**，LSP 会根据这些参数进行类型检查并产生诊断信息：
 
+> 详细的注释规范请参考 [docs/annotation_instructions.md](docs/annotation_instructions.md)。
+
 ```py
 @ct.kernel
 def your_kernel(X, Y, TILE_N: ConstInt):

@@ -55,6 +55,8 @@ And use the following markers to delimit the code section that needs analysis:
 
 Add a `<typecheck>` block in the kernel's docstring, **one per line**, and the LSP will perform type checking based on these parameters and generate diagnostics:
 
+> For detailed annotation instructions, see [docs/annotation_instructions.md](docs/annotation_instructions.md).
+
 ```py
 @ct.kernel
 def your_kernel(X, Y, TILE_N: ConstInt):
