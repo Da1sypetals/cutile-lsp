@@ -83,6 +83,10 @@ python -m cutile_lsp.lsp_pipeline.pipeline examples/kernel.py
 ## FAQ
 
 - **LSP not starting**: Confirm that the current Python interpreter has `cutile-lsp` installed and is selected in VS Code.
-- **No hints or diagnostics**: Confirm that the file has `# cutile-lsp: on` at the top, and the code contains `# cutile-lsp: start` and `# cutile-lsp: end` markers. Also ensure necessary imports are included in this region.
+- **No hints or diagnostics**: 
+  - Confirm that the file has `# cutile-lsp: on` at the top, and the code contains `# cutile-lsp: start` and `# cutile-lsp: end` markers. 
+  - Also ensure necessary imports are included in this region.
+  - Don't import from other files. This extension is not and will not be capable of handling this.
+  - Please write code like you are using C++, avoid using fancy pythonic dynamic tricks.
 - **Incorrect hint positions**: Ensure `# cutile-lsp: start` is placed before the code block to be analyzed, and do not nest multiple `start/end` pairs.
-- **Unresponsive hints**: Avoid importing heavy dependencies between `# cutile-lsp: start` and `# cutile-lsp: end`, as the extension will execute code in between.
+- **Unresponsive hints**: Avoid importing heavy dependencies (like `torch`) between `# cutile-lsp: start` and `# cutile-lsp: end`, as the extension will execute code in between.

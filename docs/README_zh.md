@@ -1,5 +1,7 @@
 # cuTile LSP 启用与使用指南
 
+> [English Version](../README.md)
+
 ## 环境准备
 
 - **Python 环境**：确保使用你要在 VS Code 中选择的 Python 解释器，并在该环境中安装 `cutile-lsp`。
@@ -81,5 +83,10 @@ python -m cutile_lsp.lsp_pipeline.pipeline examples/kernel.py
 ## 常见问题
 
 - **LSP 没启动**：确认当前 Python 解释器已安装 `cutile-lsp` 并已在 VS Code 中选中。
-- **没有任何提示或诊断**：确认文件顶部有 `# cutile-lsp: on`，并且代码包含 `# cutile-lsp: start` 和 `# cutile-lsp: end` 标记。
+- **没有任何提示或诊断**：
+  - 确认文件顶部有 `# cutile-lsp: on`，并且代码包含 `# cutile-lsp: start` 和 `# cutile-lsp: end` 标记。
+  - 同时确保必要的导入语句包含在此区域内。
+  - 不要从其他文件导入。本扩展不具备且不会具备处理此情况的能力。
+  - 请像使用 C++ 一样编写代码，避免使用花哨的 Python 动态技巧。
 - **提示位置不正确**：确保 `# cutile-lsp: start` 位于分析代码块之前，并且不要嵌套多个 `start/end` 对。
+- **提示无响应**：避免在 `# cutile-lsp: start` 和 `# cutile-lsp: end` 之间导入繁重的依赖项（比如`torch`），因为扩展会执行中间的代码。
