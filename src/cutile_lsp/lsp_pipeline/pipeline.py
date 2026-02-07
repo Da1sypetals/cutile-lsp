@@ -4,7 +4,7 @@ from pathlib import Path
 from .assemble_code import assemble_launch_func_def_code, main_code
 from .extract_code import check_cutile_lsp_enabled, extract_code
 from .get_kernels import load_kernels_to_pyfunc
-from .loggings import get_logger
+from ..loggings import get_logger
 from .parse_args import EarlyDiagnostics, TypecheckError, parse_typecheck
 
 logger = get_logger(__name__)

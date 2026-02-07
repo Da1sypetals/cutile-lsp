@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from cutile_lsp.lsp_pipeline.assemble_code import TEMP_DIR
-from cutile_lsp.lsp_pipeline.loggings import get_logger
+from cutile_lsp.loggings import get_logger
 
 
 def get_uri_hash(uri: str) -> str:

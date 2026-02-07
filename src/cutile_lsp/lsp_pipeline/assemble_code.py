@@ -3,7 +3,7 @@ import textwrap
 from pathlib import Path
 
 from .data_structures import Kernel
-from .loggings import get_logger
+from ..loggings import get_logger
 
 logger = get_logger(__name__)
 

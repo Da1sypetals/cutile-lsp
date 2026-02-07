@@ -149,7 +149,7 @@ def layer_norm_fwd(X, W, B, Y, Mean, Rstd, eps, TILE_N: ConstInt):
     num_tiles = ct.num_tiles(X, axis=1, shape=(1, TILE_N))
     N = X.shape[1]
 
-    # mean = ct.full((1, TILE_N), 0, dtype=ct.float32) # This is correct
+    # mean = ct.full((1, TILE_N), 0, dtype=ct.float32)  # This is correct
     mean = ct.full((1, TILE_N), 0, dtype=ct.float32).reshape((TILE_N, 1))
 
     for j in range(num_tiles):
@@ -286,8 +286,6 @@ def gemv_silu_mul_split_k_kernel(
 
 
 #       cutile-lsp     :end
-
-
 BATCH_DIM = 4
 M_DIM = 512
 K_DIM = 256
