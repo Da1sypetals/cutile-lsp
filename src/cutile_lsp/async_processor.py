@@ -221,24 +221,18 @@ class DocumentProcessor:
     @staticmethod
     def _create_lsp_diagnostic_from_json(diag: dict, line_offset: int) -> types.Diagnostic:
         """Convert JSON diagnostic to LSP Diagnostic."""
-        line = diag.get("line", 1) + line_offset - 1
-        col = diag.get("col", 0)
-        last_line = diag.get("last_line")
-        end_col = diag.get("end_col")
-
-        if last_line is not None and end_col is not None:
-            end_line = last_line + line_offset - 1
-            end_character = end_col
-        else:
-            end_line = line
-            end_character = col + 1
+        # Fail fast
+        line = diag["line"] + line_offset - 1
+        col = diag["col"]
+        end_line = diag["last_line"] + line_offset - 1
+        end_character = diag["end_col"]
 
         return types.Diagnostic(
             range=types.Range(
                 start=types.Position(line=max(0, line), character=col),
                 end=types.Position(line=max(0, end_line), character=end_character),
             ),
-            message=diag.get("message", ""),
+            message=f"{diag.get('error_type', '<error type not found>')}:\n{diag['message']}",
             severity=types.DiagnosticSeverity.Error,
             source="cutile-lsp",
         )

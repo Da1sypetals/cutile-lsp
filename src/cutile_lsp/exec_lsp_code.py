@@ -8,8 +8,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from cutile_lsp.lsp_pipeline.assemble_code import TEMP_DIR
+from cutile_lsp.constants import END_OF_LINE
 from cutile_lsp.loggings import get_logger
+from cutile_lsp.lsp_pipeline.assemble_code import TEMP_DIR
 
 
 def get_uri_hash(uri: str) -> str:
@@ -44,6 +45,22 @@ def execute_lsp_code(lsp_code: str, uri: str) -> tuple[list[dict], list[dict]]:
         logger.debug(f"lsp_code stderr: {result.stderr}")
     if result.stdout:
         logger.debug(f"lsp_code stdout: {result.stdout}")
+
+    # If return code is non-zero, return stdout and stderr as diagnostics
+    if result.returncode != 0:
+        full_output = ""
+        if result.stdout:
+            full_output += f"STDOUT:\n{result.stdout}\n"
+        if result.stderr:
+            full_output += f"STDERR:\n{result.stderr}"
+        error_diag = {
+            "message": f"lsp_code execution failed (exit code {result.returncode}):\n{full_output}",
+            "line": 1,
+            "col": 0,
+            "last_line": 1,
+            "end_col": END_OF_LINE,
+        }
+        return [], [error_diag]
 
     # Read the JSON results
     json_path = work_dir / "lsp_code_exec_results.json"

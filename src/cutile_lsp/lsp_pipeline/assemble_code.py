@@ -2,8 +2,8 @@ import os
 import textwrap
 from pathlib import Path
 
-from .data_structures import Kernel
 from ..loggings import get_logger
+from .data_structures import Kernel
 
 logger = get_logger(__name__)
 
@@ -97,6 +97,7 @@ def {kernel.launch_func_name}(_hints, _diagnostics):
     except TileError as e:
         # 序列化Loc信息，只包含必要的字段
         loc_info = {{
+            "error_type": type(e).__name__,
             "message": e.message,
             "line": e.loc.line,
             "col": e.loc.col
@@ -115,6 +116,7 @@ def {kernel.launch_func_name}(_hints, _diagnostics):
         # 报告任何其他异常
         error_msg = str(e).replace('"', "'").replace('\\n', ' ')
         loc_info = {{
+            "error_type": type(e).__name__,
             "message": f"Unexpected error in kernel '{kernel.name}': {{error_msg}}",
             "line": {kernel.start_line},
             "col": 0,
