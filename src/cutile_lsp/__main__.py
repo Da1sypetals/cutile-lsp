@@ -1,23 +1,15 @@
 import hashlib
-import json
-import subprocess
-import sys
 import traceback
 from pathlib import Path
 
 from lsprotocol import types
 from pygls.lsp.server import LanguageServer
 
-from cutile_lsp.lsp_pipeline.assemble_code import TEMP_DIR
+from cutile_lsp.constants import END_OF_LINE
+from cutile_lsp.exec_lsp_code import adjust_hints_line_offset, execute_lsp_code
 from cutile_lsp.lsp_pipeline.loggings import get_logger
 from cutile_lsp.lsp_pipeline.parse_args import EarlyDiagnostics
 from cutile_lsp.lsp_pipeline.pipeline import NotEnabledError, pipeline
-
-
-def get_uri_hash(uri: str) -> str:
-    """Generate a hash from URI for directory naming."""
-    return hashlib.sha256(uri.encode()).hexdigest()[:16]
-
 
 logger = get_logger(__name__)
 
@@ -28,6 +20,11 @@ server = LanguageServer(LSP_NAME, "0.1.0")
 # Cache for storing hints and diagnostics per URI
 hints_cache: dict[str, list[dict]] = {}
 diagnostics_cache: dict[str, list[types.Diagnostic]] = {}
+
+
+def get_uri_hash(uri: str) -> str:
+    """Generate a hash from URI for directory naming."""
+    return hashlib.sha256(uri.encode()).hexdigest()[:16]
 
 
 def create_lsp_diagnostics_from_early_diagnostics(early_diagnostics: EarlyDiagnostics):
@@ -80,63 +77,20 @@ def create_lsp_diagnostics_from_json_diagnostic(diag: dict, line_offset: int) ->
     )
 
 
-def execute_lsp_code(lsp_code: str, uri: str) -> tuple[list[dict], list[dict]]:
-    """
-    Execute the generated lsp_code and return hints and diagnostics from JSON.
-    Returns: (hints, diagnostics) where both are lists of dicts.
-    """
-    uri_hash = get_uri_hash(uri)
-    work_dir = Path(TEMP_DIR) / uri_hash
-    work_dir.mkdir(parents=True, exist_ok=True)
-
-    # Write lsp_code to a temporary file in the work directory
-    temp_file = work_dir / "lsp_code.py"
-    temp_file.write_text(lsp_code)
-
-    result = subprocess.run(
-        [sys.executable, str(temp_file)],
-        capture_output=True,
-        text=True,
-        timeout=30,
+def create_lsp_diagnostics_from_unexpected_error(e: Exception) -> types.Diagnostic:
+    diag = types.Diagnostic(
+        range=types.Range(
+            start=types.Position(line=0, character=0),
+            end=types.Position(line=0, character=END_OF_LINE),
+        ),
+        message=f"{LSP_NAME} internal error: {str(e)}",
+        severity=types.DiagnosticSeverity.Error,
+        source=LSP_NAME,
     )
-    logger.info(f"Executed lsp_code for {uri_hash}, return code: {result.returncode}")
-    if result.stderr:
-        logger.debug(f"lsp_code stderr: {result.stderr}")
-    if result.stdout:
-        logger.debug(f"lsp_code stdout: {result.stdout}")
-
-    # Read the JSON results
-    json_path = work_dir / "lsp_code_exec_results.json"
-    if not json_path.exists():
-        logger.warning(f"JSON results file not found: {json_path}")
-        return [], []
-
-    with open(json_path, "r") as f:
-        data = json.load(f)
-    hints = data.get("hints", [])
-    diagnostics = data.get("diagnostics", [])
-    return hints, diagnostics
+    return diag
 
 
-def adjust_hints_line_offset(hints: list[dict], line_offset: int) -> list[dict]:
-    """
-    Adjust hint line numbers by adding line_offset.
-
-    Hints from JSON have line numbers relative to active_code.
-    line_offset is the 0-indexed line number of #cutile-lsp:start in the original file.
-    After adjustment, lineno/end_lineno are in original file coordinates (1-indexed).
-    """
-    adjusted = []
-    for hint in hints:
-        h = dict(hint)
-        h["lineno"] = hint.get("lineno", 1) + line_offset
-        if "end_lineno" in hint and hint["end_lineno"] is not None:
-            h["end_lineno"] = hint["end_lineno"] + line_offset
-        adjusted.append(h)
-    return adjusted
-
-
-def hints_to_inlay_hints(hints: list[dict]) -> list[types.InlayHint]:
+def create_lsp_inlay_hints_from_json_hints(hints: list[dict]) -> list[types.InlayHint]:
     """
     Convert hint dicts to LSP InlayHint objects.
     Hints should be displayed after the variable name (at col_end).
@@ -180,7 +134,7 @@ def on_inlay_hint(ls: LanguageServer, params: types.InlayHintParams):
 
     # Filter hints within the requested range and convert to LSP InlayHint objects
     filtered = [h for h in hints if start_line <= (h.get("lineno", 1) - 1) <= end_line]
-    return hints_to_inlay_hints(filtered)
+    return create_lsp_inlay_hints_from_json_hints(filtered)
 
 
 @server.feature(types.TEXT_DOCUMENT_DID_OPEN)
@@ -248,23 +202,14 @@ def _process_document(ls: LanguageServer, uri: str):
         diagnostics_cache.pop(uri, None)
         return
 
-    except Exception as e:
+    except Exception as e:  # Deal with any unexpected error in LSP
         # log the error stack trace
         logger.error(f"Error processing document: {file_path}\n{traceback.format_exc()}")
         # Send error as diagnostic
         ls.text_document_publish_diagnostics(
             types.PublishDiagnosticsParams(
                 uri=uri,
-                diagnostics=[
-                    types.Diagnostic(
-                        range=types.Range(
-                            start=types.Position(line=0, character=0), end=types.Position(line=0, character=1)
-                        ),
-                        message=f"{LSP_NAME} internal error: {str(e)}",
-                        severity=types.DiagnosticSeverity.Error,
-                        source=LSP_NAME,
-                    )
-                ],
+                diagnostics=[create_lsp_diagnostics_from_unexpected_error(e)],
             )
         )
 

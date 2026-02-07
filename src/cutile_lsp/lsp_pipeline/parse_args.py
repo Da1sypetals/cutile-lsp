@@ -2,18 +2,18 @@ import ast
 import inspect
 from dataclasses import dataclass
 
+from cutile_lsp.constants import END_OF_LINE
+
 from .data_structures import Kernel
 
 TYPECHECK_START = "<typecheck>"
 TYPECHECK_END = "</typecheck>"
 
-INT_MAX = 1073741824
-
 
 class TypecheckError(Exception):
     """Base class for typecheck-related errors with position information."""
 
-    def __init__(self, line: int, col: int, message: str, end_col: int = INT_MAX):
+    def __init__(self, line: int, col: int, message: str, end_col: int = END_OF_LINE):
         super().__init__()
         self.line = line
         self.col = col
