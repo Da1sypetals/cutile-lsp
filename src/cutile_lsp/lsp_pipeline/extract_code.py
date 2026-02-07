@@ -59,8 +59,8 @@ def extract_code(text: str) -> tuple[str, int]:
 
     lines = text.split("\n")
 
-    start_pattern = re.compile(r"^\s*#\s*cutile-lsp\s*:\s*start\s*$")
-    end_pattern = re.compile(r"^\s*#\s*cutile-lsp\s*:\s*end\s*$")
+    start_pattern = re.compile(r"#\s*cutile-lsp\s*:\s*start")
+    end_pattern = re.compile(r"#\s*cutile-lsp\s*:\s*end")
 
     start_line = -1
     end_line = -1
