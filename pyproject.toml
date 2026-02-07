@@ -15,6 +15,7 @@ dependencies = [
     "pygls>=2.0.0",
     "lsprotocol>=2025.0.0",
     "colorama>=0.4.6",
+    "cuda-tile>=1.1.0",
 ]
 
 [project.scripts]
